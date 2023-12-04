@@ -1,3 +1,4 @@
+import { error } from 'console'
 import db from '../config/db.config.js'
 
 class SongController {
@@ -5,59 +6,114 @@ class SongController {
         console.log('Class Songcontroller instantiated')
     }
 
+
+    
     list = (req,res) => {
-        console.log('hent alle sange');
-        const sql = `SELECT s.id, s.title, a.name
-                        FROM song s
-                        JOIN artist a
-                        ON s.artist_id = a.id`
-        db.query(sql, (error, result) => {
-            if(error) {
-                console.error(error);
-                return res.status(500).jston({error: 'Internal Server Error'})
-            } else {
-                return res.json(result);
-            }
-        })
-    }
+		// SQL Query med json return
+		const sql = `SELECT s.id, s.title, a.name 
+						FROM song s 
+						JOIN artist a 
+						ON s.artist_id = a.id`
+		db.query(sql, (error,result) => {
+			if(error) {
+				console.error(error);
+			} else {
+				return res.json(result)
+			}
+		})
+	}
     
     details = (req,res) => {
-        console.log('Hent detaljer');
-        const { id } = req.params
+		// Destructuring assignment - henter id fra URL param
+		const { id } = req.params
+		// SQL Query med value markers (?) og json return
+		// Value marker (?) markerer dynamiske værdier som 
+		// sendes med query som et array - Eksempel: [id]
+		const sql = `SELECT s.id, s.title, s.content, 
+								s.artist_id, a.name 
+						FROM song s 
+						JOIN artist a 
+						ON s.artist_id = a.id 
+						WHERE s.id = ?`
+		db.query(sql, [id],(error,result) => {
+			console.error(error);
+			return res.json(result)
+		})
+	}
+
+    search = (req,res) => {
+        const { keyword } = req.query
+
         const sql = `SELECT s.id, s.title, s.content,
-                                s.artist_id, a.name
-                        FROM song s
-                        JOIN artist a
-                        ON s.artist_id = a.id
-                        WHERE s.id = ${id}`
-        db.query(sql,(error,result) => {
-            if(error) {
-                console.error(error);
-                return res.status(500).json({ error: 'Internal Server Error'})
-            } else { 
-                if (result.length === 0) {
-                    return res.status(404).json({ error: 'Song details not found' });
-                  }
-                return res.json(result[0])
-            }
+                        s.artist_id, a.name
+                FROM song s
+                JOIN artist a
+                ON s.artist_id = a.id
+                                        WHERE s.title LIKE ?
+                                        OR s.content LIKE ?
+                                        OR a.name LIKE ?`
+        
+        const fixed_keyword = '%'+keyword+'%'
+
+        db.query(sql, [fixed_keyword,fixed_keyword,fixed_keyword], (error,result) => {
+            if(error) throw error
+    return res.json(result)
         })
+
+
     }
     
     create = (req, res) => {
-        const { title, content, artist_id } = req.body
-        const sql = `INSERT INTO song (title, content, artist_id)
+		// Destructure assignment - henter værdier fra Form Body
+		const { title, content, artist_id } = req.body
+		// SQL Statement med value markers (?)
+        const sql = `INSERT INTO song (title, content, artist_id) 
                         VALUES (?,?,?)`
-        db.query(sql, [title,content, artist_id],(error, result) =>{
-            if(error) {
-                console.error(error)
+        db.query(sql, [title,content,artist_id], (error,result) => {
+			if(error) throw error
+			// Returnerer json med nyeste id
+			return res.json({
+				message: 'New song created',
+				newId: result.insertId
+			})
+        })
+	}
+
+	update = (req, res) => {
+		// Destructure assignment - henter værdier fra Form Body
+		const { id, title, content, artist_id } = req.body
+		// SQL Statement med value markers (?)
+        const sql = `UPDATE song 
+						SET title = ?, content =?, artist_id = ? 
+                        WHERE id = ?`
+        db.query(sql, [title,content,artist_id,id], (error,result) => {
+			if(error) {
+				console.log(error)
+			} else {
+				// Returnerer json med nyeste id
+				return res.json({
+					message: 'Song Updated'
+				})
+			}
+        })
+	}
+
+	delete = (req, res) => {
+		// Destructure assignment - henter værdier fra Form Body
+        const { id } = req.body
+        
+		const sql = `DELETE FROM song WHERE id = ?`
+		db.query(sql, [id], (error,result) => {
+			if(error) {
+                console.log(error)
             } else {
+                // Returnerer json med nyeste id
                 return res.json({
-                    message: 'New song created',
-                    newID: result.insertId
+                    message: 'Song Deleted'
                 })
             }
-        })
-    }
+		})
+	}
 }
 
 export default SongController

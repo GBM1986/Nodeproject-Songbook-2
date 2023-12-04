@@ -1,9 +1,12 @@
 {
+  
   "name": "nodeproject-songbook-2",
   "version": "20.10.1",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
