@@ -1,5 +1,7 @@
-import { error } from 'console'
 import db from '../config/db.config.js'
+import SongModel from '../models/song.model.js';
+
+const model = new SongModel();
 
 class SongController {
     constructor() {
@@ -8,19 +10,14 @@ class SongController {
 
 
     
-    list = (req,res) => {
-		// SQL Query med json return
-		const sql = `SELECT s.id, s.title, a.name 
-						FROM song s 
-						JOIN artist a 
-						ON s.artist_id = a.id`
-		db.query(sql, (error,result) => {
-			if(error) {
-				console.error(error);
-			} else {
-				return res.json(result)
-			}
-		})
+    /**
+	 * List Method - List all songs
+	 * @param {object} req 
+	 * @param {object} res 
+	 */
+	list = async (req,res) => {
+		const result = await model.list(req,res)
+		res.json(result)
 	}
     
     details = (req,res) => {
@@ -30,7 +27,7 @@ class SongController {
 		// Value marker (?) markerer dynamiske værdier som 
 		// sendes med query som et array - Eksempel: [id]
 		const sql = `SELECT s.id, s.title, s.content, 
-								s.artist_id, a.name 
+								s.artist_id, a.name, s.created 
 						FROM song s 
 						JOIN artist a 
 						ON s.artist_id = a.id 
